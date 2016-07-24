@@ -215,7 +215,7 @@ table_search_by_dev (struct libmnt_table *tbl, Device *dev)
 		return fs;
 
 	// Try to match the label
-	fs = table_search_by_str(tbl, LABEL, udev_get_prop(dev->dev, "ID_FS_LABEL"));
+	fs = table_search_by_str(tbl, LABEL, udev_get_prop(dev->dev, "ID_PATH_TAG"));
 	if (fs)
 		return fs;
 
@@ -242,7 +242,7 @@ table_search_by_udev (struct libmnt_table *tbl, struct udev_device *udev)
 		return fs;
 
 	// Try to match the label
-	fs = table_search_by_str(tbl, LABEL, udev_get_prop(udev, "ID_FS_LABEL"));
+	fs = table_search_by_str(tbl, LABEL, udev_get_prop(udev, "ID_PATH_TAG"));
 	if (fs)
 		return fs;
 
@@ -412,7 +412,7 @@ device_get_mp (Device *dev, const char *base)
 		return NULL;
 
 	// Use the first non-null field
-	unique = first_nonnull(udev_get_prop(dev->dev, "ID_FS_LABEL"),
+	unique = first_nonnull(udev_get_prop(dev->dev, "ID_PATH_TAG"),
 			       udev_get_prop(dev->dev, "ID_FS_UUID"),
 			       udev_get_prop(dev->dev, "ID_SERIAL"));
 
