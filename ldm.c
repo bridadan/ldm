@@ -423,7 +423,7 @@ device_get_mp (Device *dev, const char *base)
 		return NULL;
 
 	// If the mountpoint we've come up with already exists try to find a good one by appending '_'
-	while (g_file_test(mp, G_FILE_TEST_EXISTS)) {
+	/*while (g_file_test(mp, G_FILE_TEST_EXISTS)) {
 		// We tried hard and failed
 		if (strlen(mp) == sizeof(mp) - 2)
 				return NULL;
@@ -443,9 +443,51 @@ device_get_mp (Device *dev, const char *base)
 
 		// Directory not empty, append a '_'
 		strcat(mp, "_");
-	}
+	}*/
 
 	return strdup(mp);
+}
+
+int
+device_unmount (Device *dev)
+{
+	struct libmnt_context *ctx;
+	int rc;
+
+	if (!dev) {
+                syslog(LOG_ERR, "dev is null!");
+		return 0;
+        }
+
+	
+        // Unmount the device if it is actually mounted
+	if (!table_search_by_dev(g_mtab, dev)) {
+                syslog(LOG_ERR, "not found in table!");
+		return 0;
+        }
+        
+
+	(void)spawn_callback("pre_unmount", dev);
+
+	ctx = mnt_new_context();
+	mnt_context_set_target(ctx, dev->node);
+
+	rc = mnt_context_umount(ctx);
+	rc = mnt_context_rc_value(ctx, rc);
+
+	if (rc) {
+		syslog(LOG_ERR, "Error while unmounting %s", dev->node);
+
+		mnt_free_context(ctx);
+		return 0;
+	}
+	mnt_free_context(ctx);
+
+	rmdir(dev->mp);
+
+	(void)spawn_callback("unmount", dev);
+
+	return 1;
 }
 
 int
@@ -457,6 +499,7 @@ device_mount (Device *dev)
 	struct libmnt_context *ctx;
 	struct libmnt_fs *fstab;
 	int rc;
+        int umount_result;
 
 	if (!dev)
 		return 0;
@@ -470,7 +513,17 @@ device_mount (Device *dev)
 
 	if (!mp)
 		return 0;
-
+	
+        
+        // If the mp exists, force it to unmount
+        if (strcmp(mp, "/") != 0 && strcmp(mp, "/boot") != 0 && g_file_test(mp, G_FILE_TEST_EXISTS)) {
+                umount_result = umount(mp);
+                if (umount_result) {
+                        syslog(LOG_ERR, "Unmount of path %s failed with code %d", mp, umount_result);
+                        return 0;
+                }
+        }
+              
 	if (!g_file_test(mp, G_FILE_TEST_EXISTS)) {
 		// Create the mountpoint folder only if it's not already present
 		if (mkdir(mp, 775) < 0) {
@@ -538,42 +591,6 @@ device_mount (Device *dev)
 	}
 
 	(void)spawn_callback("mount", dev);
-
-	return 1;
-}
-
-int
-device_unmount (Device *dev)
-{
-	struct libmnt_context *ctx;
-	int rc;
-
-	if (!dev)
-		return 0;
-
-	// Unmount the device if it is actually mounted
-	if (!table_search_by_dev(g_mtab, dev))
-		return 0;
-
-	(void)spawn_callback("pre_unmount", dev);
-
-	ctx = mnt_new_context();
-	mnt_context_set_target(ctx, dev->node);
-
-	rc = mnt_context_umount(ctx);
-	rc = mnt_context_rc_value(ctx, rc);
-
-	if (rc) {
-		syslog(LOG_ERR, "Error while unmounting %s", dev->node);
-
-		mnt_free_context(ctx);
-		return 0;
-	}
-	mnt_free_context(ctx);
-
-	rmdir(dev->mp);
-
-	(void)spawn_callback("unmount", dev);
 
 	return 1;
 }
