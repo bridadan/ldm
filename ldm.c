@@ -520,7 +520,6 @@ device_mount (Device *dev)
                 umount_result = umount(mp);
                 if (umount_result) {
                         syslog(LOG_ERR, "Unmount of path %s failed with code %d", mp, umount_result);
-                        return 0;
                 }
         }
               
