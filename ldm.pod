@@ -72,6 +72,38 @@ ldm doesn't offer any blacklisting by itself but it honors the options found in 
 
 =head1 INSTALL
 
+To build, run the following:
+
+
+=begin man
+
+.sp
+.RS 4
+.nf
+.BB lightgray
+apt-get install libmount-dev libudev-dev libglib2.0-dev
+make
+make install
+.EB lightgray
+.fi
+.RE
+
+=end man
+
+=begin html
+
+<pre>
+<code>
+apt-get install libmount-dev libudev-dev libglib2.0-dev
+make
+make install
+sudo systemctl enable ldm # may need to reboot here
+sudo systemctl start ldm
+</code>
+</pre>
+
+=end html
+
 The included systemd service expects a config file at /etc/ldm.conf similar to this: 
 
 =begin man
